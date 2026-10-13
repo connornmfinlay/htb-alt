@@ -1,0 +1,92 @@
+{
+  "_comment": "Seed curriculum for the tracker. Edit freely - add/remove skills. 'track' copies anything new here into progress.json on next run without clobbering your status/notes.",
+  "modules": [
+    {
+      "category": "recon",
+      "title": "Reconnaissance & Enumeration",
+      "skills": [
+        {"id": "recon-hostdisc", "title": "Host discovery & port scanning methodology", "targets": ["metasploitable2"]},
+        {"id": "recon-service", "title": "Service & version enumeration, banner reading", "targets": ["metasploitable2"]},
+        {"id": "recon-web", "title": "Web content & directory discovery", "targets": ["dvwa", "bwapp"]},
+        {"id": "recon-dns", "title": "DNS enumeration & vhost discovery", "targets": []}
+      ]
+    },
+    {
+      "category": "web",
+      "title": "Web Application Testing",
+      "skills": [
+        {"id": "web-sqli", "title": "SQL injection (auth bypass, union, blind)", "targets": ["dvwa", "bwapp", "mutillidae"]},
+        {"id": "web-xss", "title": "Cross-site scripting (reflected/stored/DOM)", "targets": ["dvwa", "juiceshop", "mutillidae"]},
+        {"id": "web-authz", "title": "Broken access control / IDOR", "targets": ["juiceshop", "nodegoat"]},
+        {"id": "web-upload", "title": "Insecure file upload handling", "targets": ["dvwa", "bwapp"]},
+        {"id": "web-lfi", "title": "File inclusion & path traversal", "targets": ["bwapp", "mutillidae"]},
+        {"id": "web-ssrf", "title": "SSRF & server-side request handling", "targets": ["juiceshop"]},
+        {"id": "web-deser", "title": "Insecure deserialization", "targets": ["nodegoat"]}
+      ]
+    },
+    {
+      "category": "api",
+      "title": "API Testing",
+      "skills": [
+        {"id": "api-authn", "title": "Broken authentication / JWT handling", "targets": ["vampi", "dvws"]},
+        {"id": "api-bola", "title": "Broken object-level authorization (BOLA)", "targets": ["vampi"]},
+        {"id": "api-massassign", "title": "Mass assignment & excessive data exposure", "targets": ["vampi"]}
+      ]
+    },
+    {
+      "category": "network",
+      "title": "Network Service Exploitation",
+      "skills": [
+        {"id": "net-services", "title": "Enumerating & attacking common services (FTP/SMB/SSH/SMTP)", "targets": ["metasploitable2"]},
+        {"id": "net-creds", "title": "Default & weak credential testing", "targets": ["metasploitable2", "dvwa"]},
+        {"id": "net-crack", "title": "Offline password cracking & hash identification", "targets": []}
+      ]
+    },
+    {
+      "category": "privesc",
+      "title": "Privilege Escalation",
+      "skills": [
+        {"id": "pe-linux", "title": "Linux privesc (SUID, sudo, cron, capabilities)", "targets": ["metasploitable2"]},
+        {"id": "pe-windows", "title": "Windows privesc (services, tokens, registry)", "targets": []},
+        {"id": "pe-enum", "title": "Automated local enumeration & triage", "targets": ["metasploitable2"]}
+      ]
+    },
+    {
+      "category": "ad",
+      "title": "Active Directory (Windows lab)",
+      "skills": [
+        {"id": "ad-enum", "title": "AD enumeration (users, groups, ACLs, shares)", "targets": []},
+        {"id": "ad-kerb", "title": "Kerberos attacks (roasting, delegation)", "targets": []},
+        {"id": "ad-lateral", "title": "Lateral movement & credential reuse", "targets": []},
+        {"id": "ad-domdom", "title": "Domain privilege escalation paths", "targets": []}
+      ]
+    },
+    {
+      "category": "pivot",
+      "title": "Pivoting & Post-Exploitation",
+      "skills": [
+        {"id": "pivot-tunnel", "title": "Port forwarding & tunneling through a foothold", "targets": []},
+        {"id": "pivot-pers", "title": "Understanding persistence & detection trade-offs", "targets": []}
+      ]
+    },
+    {
+      "category": "cloud",
+      "title": "Cloud (AWS) Testing",
+      "skills": [
+        {"id": "cloud-iam", "title": "IAM enumeration & privilege-escalation paths", "targets": []},
+        {"id": "cloud-s3", "title": "S3 bucket permission misconfigurations", "targets": []},
+        {"id": "cloud-metadata", "title": "Instance metadata abuse / SSRF-to-cloud", "targets": []},
+        {"id": "cloud-netexposure", "title": "Security-group & public-exposure review", "targets": []}
+      ]
+    },
+    {
+      "category": "report",
+      "title": "Reporting & Interview Prep",
+      "skills": [
+        {"id": "rep-notes", "title": "Structured note-taking during an engagement", "targets": []},
+        {"id": "rep-writeup", "title": "Writing a finding (impact, repro, remediation)", "targets": []},
+        {"id": "rep-methodology", "title": "Articulate a repeatable methodology out loud", "targets": []}
+      ]
+    }
+  ]
+}

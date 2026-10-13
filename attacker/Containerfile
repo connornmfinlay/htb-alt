@@ -1,0 +1,25 @@
+# Kali "attacker" box for the lab.
+# Build:  ./lab attacker build
+# Shell:  ./lab attacker shell
+FROM docker.io/kalilinux/kali-rolling
+
+ARG TOOLSET=kali-linux-headless
+# kali-linux-headless  = the standard CLI toolset (big, ~2-4GB)
+# kali-tools-top10      = lighter, the 10 most-used tools
+# kali-linux-default    = full default desktop toolset (very big)
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ${TOOLSET} \
+      kali-linux-core \
+      iproute2 iputils-ping dnsutils netcat-traditional \
+      curl wget git vim tmux less zsh python3 python3-pip \
+      openssh-client \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+# A persistent home is bind-mounted at /root/work by the lab CLI so your
+# loot, notes and tooling survive container rebuilds.
+WORKDIR /root/work
+CMD ["/bin/bash"]

@@ -1,0 +1,23 @@
+# OWASP Mutillidae II - deliberately insecure LAMP training app.
+# Multi-container, so it lives here as compose rather than a single image.
+# Brought up by:  ./lab target up mutillidae
+services:
+  mutillidae-db:
+    image: docker.io/webpwnized/mutillidae:database
+    container_name: mutillidae-db
+    hostname: mutillidae-db
+    networks: [labnet]
+
+  mutillidae:
+    image: docker.io/webpwnized/mutillidae:www
+    container_name: mutillidae
+    hostname: mutillidae
+    depends_on: [mutillidae-db]
+    ports:
+      - "${PUBLISH_ADDR:-0.0.0.0}:8085:80"
+    networks: [labnet]
+
+networks:
+  labnet:
+    external: true
+    name: labnet

@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------------------
+# NEVER commit secrets. These patterns keep credentials out of git.
+# ---------------------------------------------------------------------------
+# AWS / cloud credentials
+.env
+.env.*
+*.env
+credentials
+aws-credentials*
+*.pem
+*.ppk
+*.key
+*_rsa
+*_rsa.pub
+id_*
+.aws/
+**/secrets/**
+
+# Terraform state & vars (state can contain secrets in plaintext)
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+crash.log
+
+# Attacker working data: loot, scans, downloaded tooling, creds you capture
+attacker/work/
+
+# Lab notes often contain target creds/flags you discover - keep them local.
+# (Comment the next line out if you deliberately want to version your notes.)
+notes/
+
+# VM disk images / ISOs (huge, not git material)
+*.qcow2
+*.img
+*.iso
+*.vmdk
+*.vdi
+windows/vms/
+windows/iso/
+
+# OS / editor noise
+.DS_Store
+*.swp
+*~

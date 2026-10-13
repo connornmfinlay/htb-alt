@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# lab - manage a private pentest-training lab on podman.
+#
+#   ./lab up                 bring up network + build/start the Kali attacker
+#   ./lab attacker build     (re)build the Kali attacker image
+#   ./lab attacker shell     drop into a shell on the attacker box
+#   ./lab attacker up|down   start/stop the attacker box
+#   ./lab catalog            list available training targets
+#   ./lab target up <id>     start a target on the lab network
+#   ./lab target down <id>   stop & remove a target
+#   ./lab target ls          list running targets + their lab IPs
+#   ./lab portal             serve a dashboard of running targets (reach it from
+#                            another machine, e.g. your XPS, over Tailscale :1337)
+#   ./lab status             show network, attacker and targets
+#   ./lab net up|down        create/remove the isolated lab network
+#   ./lab down               stop everything (targets + attacker)
+#   ./lab reset              down + remove the network (clean slate)
+#
+# Targets live on an ISOLATED internal network. The attacker reaches them by
+# hostname (podman DNS) just like a real engagement scope.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+need_podman
+
+# ---- network -------------------------------------------------------------
+net_up() {
+  if net_exists; then info "network '$LAB_NET' already exists"; return; fi
+  info "creating isolated lab network '$LAB_NET' ($LAB_SUBNET)"
+  # --internal keeps targets off the internet; attacker gets a side NIC for updates.
+  podman network create \
+    --subnet "$LAB_SUBNET" --gateway "$LAB_GW" \
+    "$LAB_NET" >/dev/null
+  ok "network up"
+}
+net_down() {
+  net_exists || { info "no lab network to remove"; return; }
+  podman network rm -f "$LAB_NET" >/dev/null && ok "network removed"
+}
+
+# ---- attacker ------------------------------------------------------------
+attacker_build() {
+  mkdir -p "$WORK_DIR"
+  info "building Kali attacker image (this pulls a few GB the first time)"
+  podman build -t "$ATTACKER_IMAGE" "$ROOT_DIR/attacker"
+  ok "attacker image built: $ATTACKER_IMAGE"
+}
+attacker_up() {
+  net_up
+  podman image exists "$ATTACKER_IMAGE" || attacker_build
+  if target_running "$ATTACKER_NAME"; then info "attacker already running"; return; fi
+  podman rm -f "$ATTACKER_NAME" >/dev/null 2>&1 || true
+  mkdir -p "$WORK_DIR"
+  info "starting attacker ($ATTACKER_IP on $LAB_NET)"
+  podman run -d --name "$ATTACKER_NAME" \
+    --network "$LAB_NET" --ip "$ATTACKER_IP" --hostname "$ATTACKER_NAME" \
+    --cap-add NET_RAW,NET_ADMIN \
+    -v "$WORK_DIR:/root/work:Z" \
+    -v "$ROOT_DIR/notes:/root/notes:Z" \
+    "$ATTACKER_IMAGE" sleep infinity >/dev/null
+  ok "attacker up - './lab attacker shell' to hop in"
+}
+attacker_shell() {
+  target_running "$ATTACKER_NAME" || attacker_up
+  exec podman exec -it "$ATTACKER_NAME" /bin/bash
+}
+attacker_down() { podman rm -f "$ATTACKER_NAME" >/dev/null 2>&1 && ok "attacker stopped" || info "attacker not running"; }
+
+# ---- targets -------------------------------------------------------------
+catalog_list() {
+  printf '%s%-16s %-9s %-8s %s%s\n' "$c_bold" ID CATEGORY PUBLISH DESCRIPTION "$c_reset"
+  while IFS=$'\t' read -r id cat type ref ports desc; do
+    [[ "$id" =~ ^#|^$ ]] && continue
+    local pub="$ports"; [ "$pub" = "-" ] && pub="(internal)"
+    printf '%-16s %-9s %-8s %s\n' "$id" "$cat" "${pub%%:*}" "$desc"
+  done < "$CATALOG"
+  echo; info "start one with:  ./lab target up <id>"
+}
+target_up() {
+  local id="${1:?usage: lab target up <id>}"
+  catalog_lookup "$id" || die "no target '$id' in catalog (see: ./lab catalog)"
+  net_up
+  local pubargs=(); [ "$REPLY_PORTS" != "-" ] && pubargs=(-p "${PUBLISH_ADDR}:${REPLY_PORTS}")
+  if [ "$REPLY_TYPE" = "compose" ]; then
+    local dir="$ROOT_DIR/targets/$REPLY_REF"
+    [ -f "$dir/compose.yml" ] || die "missing compose file: $dir/compose.yml"
+    info "starting compose target '$id'"
+    LAB_NET="$LAB_NET" podman compose -f "$dir/compose.yml" -p "lab_$id" up -d
+  else
+    if target_running "$id"; then warn "'$id' already running"; return; fi
+    podman rm -f "$id" >/dev/null 2>&1 || true
+    info "starting '$id' ($REPLY_DESC)"
+    podman run -d --name "$id" --network "$LAB_NET" --hostname "$id" \
+      "${pubargs[@]}" "$REPLY_REF" >/dev/null
+  fi
+  local ip; ip=$(podman inspect -f "{{.NetworkSettings.Networks.$LAB_NET.IPAddress}}" "$id" 2>/dev/null || true)
+  ok "'$id' up"
+  [ -n "$ip" ] && info "  lab IP:   $ip   (attacker resolves it as: $id)"
+  [ "$REPLY_PORTS" != "-" ] && info "  browser:  http://${PUBLISH_ADDR}:${REPLY_PORTS%%:*}  (and via ./lab portal)"
+}
+target_down() {
+  local id="${1:?usage: lab target down <id>}"
+  catalog_lookup "$id" || true
+  if [ "${REPLY_TYPE:-}" = "compose" ]; then
+    podman compose -f "$ROOT_DIR/targets/$REPLY_REF/compose.yml" -p "lab_$id" down
+  else
+    podman rm -f "$id" >/dev/null 2>&1 || true
+  fi
+  ok "'$id' removed"
+}
+target_ls() {
+  printf '%s%-16s %-16s %s%s\n' "$c_bold" NAME "LAB IP" STATUS "$c_reset"
+  local names; names=$(podman ps --filter "network=$LAB_NET" --format '{{.Names}}')
+  [ -z "$names" ] && { info "no targets running on $LAB_NET"; return; }
+  for n in $names; do
+    [ "$n" = "$ATTACKER_NAME" ] && continue
+    local ip; ip=$(podman inspect -f "{{.NetworkSettings.Networks.$LAB_NET.IPAddress}}" "$n")
+    printf '%-16s %-16s %s\n' "$n" "$ip" "running"
+  done
+}
+
+status() {
+  echo "${c_bold}Lab network${c_reset}"
+  if net_exists; then podman network inspect "$LAB_NET" -f '  {{.Name}}  subnet {{range .Subnets}}{{.Subnet}}{{end}}'; echo
+  else echo "  (down)"; fi
+  echo "${c_bold}Attacker${c_reset}"
+  if target_running "$ATTACKER_NAME"; then echo "  running at $ATTACKER_IP"; else echo "  (down)"; fi
+  echo "${c_bold}Targets${c_reset}"; target_ls
+}
+
+lab_down() {
+  local names; names=$(podman ps -a --filter "network=$LAB_NET" --format '{{.Names}}' || true)
+  for n in $names; do podman rm -f "$n" >/dev/null 2>&1 || true; done
+  ok "all lab containers stopped"
+}
+
+# ---- dispatch ------------------------------------------------------------
+case "${1:-}" in
+  up)        attacker_up ;;
+  down)      lab_down ;;
+  reset)     lab_down; net_down ;;
+  status)    status ;;
+  catalog)   catalog_list ;;
+  net)       case "${2:-}" in up) net_up;; down) net_down;; *) die "lab net up|down";; esac ;;
+  attacker)  case "${2:-}" in build) attacker_build;; up) attacker_up;; shell) attacker_shell;; down) attacker_down;; *) die "lab attacker build|up|shell|down";; esac ;;
+  target)    case "${2:-}" in up) target_up "${3:-}";; down) target_down "${3:-}";; ls) target_ls;; *) die "lab target up|down <id> | ls";; esac ;;
+  portal)    exec python3 "$ROOT_DIR/tools/portal.py" ;;
+  ""|-h|--help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) die "unknown command '$1' (try: ./lab --help)" ;;
+esac

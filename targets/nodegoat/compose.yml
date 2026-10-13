@@ -1,0 +1,26 @@
+# OWASP NodeGoat - intentionally insecure Node.js app (OWASP Top 10 lessons).
+# Brought up by:  ./lab target up nodegoat
+services:
+  nodegoat-db:
+    image: docker.io/mongo:4.4
+    container_name: nodegoat-db
+    hostname: nodegoat-db
+    networks: [labnet]
+
+  nodegoat:
+    image: docker.io/owasp/nodegoat
+    container_name: nodegoat
+    hostname: nodegoat
+    depends_on: [nodegoat-db]
+    environment:
+      - MONGODB_URI=mongodb://nodegoat-db:27017/nodegoat
+    command: >
+      bash -c "node artifacts/db-reset.js && npm start"
+    ports:
+      - "${PUBLISH_ADDR:-0.0.0.0}:8086:4000"
+    networks: [labnet]
+
+networks:
+  labnet:
+    external: true
+    name: labnet

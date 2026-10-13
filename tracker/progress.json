@@ -1,0 +1,137 @@
+{
+  "skills": {
+    "recon-hostdisc": {
+      "status": "todo",
+      "notes": []
+    },
+    "recon-service": {
+      "status": "todo",
+      "notes": []
+    },
+    "recon-web": {
+      "status": "todo",
+      "notes": []
+    },
+    "recon-dns": {
+      "status": "todo",
+      "notes": []
+    },
+    "web-sqli": {
+      "status": "todo",
+      "notes": []
+    },
+    "web-xss": {
+      "status": "todo",
+      "notes": []
+    },
+    "web-authz": {
+      "status": "todo",
+      "notes": []
+    },
+    "web-upload": {
+      "status": "todo",
+      "notes": []
+    },
+    "web-lfi": {
+      "status": "todo",
+      "notes": []
+    },
+    "web-ssrf": {
+      "status": "todo",
+      "notes": []
+    },
+    "web-deser": {
+      "status": "todo",
+      "notes": []
+    },
+    "api-authn": {
+      "status": "todo",
+      "notes": []
+    },
+    "api-bola": {
+      "status": "todo",
+      "notes": []
+    },
+    "api-massassign": {
+      "status": "todo",
+      "notes": []
+    },
+    "net-services": {
+      "status": "todo",
+      "notes": []
+    },
+    "net-creds": {
+      "status": "todo",
+      "notes": []
+    },
+    "net-crack": {
+      "status": "todo",
+      "notes": []
+    },
+    "pe-linux": {
+      "status": "todo",
+      "notes": []
+    },
+    "pe-windows": {
+      "status": "todo",
+      "notes": []
+    },
+    "pe-enum": {
+      "status": "todo",
+      "notes": []
+    },
+    "ad-enum": {
+      "status": "todo",
+      "notes": []
+    },
+    "ad-kerb": {
+      "status": "todo",
+      "notes": []
+    },
+    "ad-lateral": {
+      "status": "todo",
+      "notes": []
+    },
+    "ad-domdom": {
+      "status": "todo",
+      "notes": []
+    },
+    "pivot-tunnel": {
+      "status": "todo",
+      "notes": []
+    },
+    "pivot-pers": {
+      "status": "todo",
+      "notes": []
+    },
+    "cloud-iam": {
+      "status": "todo",
+      "notes": []
+    },
+    "cloud-s3": {
+      "status": "todo",
+      "notes": []
+    },
+    "cloud-metadata": {
+      "status": "todo",
+      "notes": []
+    },
+    "cloud-netexposure": {
+      "status": "todo",
+      "notes": []
+    },
+    "rep-notes": {
+      "status": "todo",
+      "notes": []
+    },
+    "rep-writeup": {
+      "status": "todo",
+      "notes": []
+    },
+    "rep-methodology": {
+      "status": "todo",
+      "notes": []
+    }
+  },
+  "journal": []
+}

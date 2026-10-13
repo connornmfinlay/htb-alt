@@ -1,0 +1,22 @@
+# Catalog of purpose-built, intentionally-vulnerable TRAINING targets.
+# These images are published by their projects specifically for security
+# education. Each row is a target you can spin up on the lab network.
+#
+# columns (tab-separated):
+#   id            short name you type:  ./lab target up <id>
+#   category      web | network | upload | api | ad
+#   type          image  (single container)  |  compose (dir under targets/<id>)
+#   ref           image reference, or compose dir name
+#   ports         host:container web port to publish, or "-" for none
+#   description
+#
+# id	category	type	ref	ports	description
+dvwa	web	image	docker.io/vulnerables/web-dvwa	8081:80	Damn Vulnerable Web App - classic web pentest trainer
+juiceshop	web	image	docker.io/bkimminich/juice-shop	8082:3000	OWASP Juice Shop - modern JS/API vuln app
+webgoat	web	image	docker.io/webgoat/webgoat	8083:8080	OWASP WebGoat - guided web lessons
+bwapp	web	image	docker.io/raesene/bwapp	8084:80	bWAPP - buggy web app, 100+ web bugs
+mutillidae	web	compose	mutillidae	8085:80	OWASP Mutillidae II - deliberately insecure LAMP app
+nodegoat	web	compose	nodegoat	8086:4000	OWASP NodeGoat - insecure Node.js app
+metasploitable2	network	image	docker.io/tleemcjr/metasploitable2	-	Metasploitable 2 - vulnerable Linux host, many services
+dvws	api	image	docker.io/tussauth/dvws-node	8087:80	Damn Vulnerable Web Services - API/SOAP/REST trainer
+vampi	api	image	docker.io/erev0s/vampi	8088:5000	VAmPI - vulnerable REST API (OWASP API Top 10)

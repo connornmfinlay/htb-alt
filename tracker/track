@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""track - a tiny progress tracker for the pentest-training curriculum.
+
+Usage:
+  ./tracker/track list [category]     show skills (optionally one category)
+  ./tracker/track show                progress summary by category
+  ./tracker/track start <id>          mark a skill as 'learning'
+  ./tracker/track done  <id>          mark a skill as 'done'
+  ./tracker/track reset <id>          mark a skill back to 'todo'
+  ./tracker/track note  <id> <text>   attach/append a note to a skill
+  ./tracker/track log   <text>        add a dated line to your journal
+  ./tracker/track log                 print the journal
+
+State lives in tracker/progress.json. New skills added to curriculum.json
+are merged in automatically without touching your status or notes.
+"""
+import json, sys, datetime
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+CURRIC = HERE / "curriculum.json"
+STATE = HERE / "progress.json"
+
+STATUS_MARK = {"todo": "[ ]", "learning": "[~]", "done": "[x]"}
+C = {"todo": "\033[90m", "learning": "\033[33m", "done": "\033[32m",
+     "reset": "\033[0m", "bold": "\033[1m", "cyan": "\033[36m"}
+
+
+def load():
+    curric = json.loads(CURRIC.read_text())
+    state = json.loads(STATE.read_text()) if STATE.exists() else {"skills": {}, "journal": []}
+    state.setdefault("skills", {})
+    state.setdefault("journal", [])
+    # merge: ensure every curriculum skill has a state entry
+    index = {}
+    for mod in curric["modules"]:
+        for sk in mod["skills"]:
+            index[sk["id"]] = {"category": mod["category"], "mod": mod["title"], **sk}
+            state["skills"].setdefault(sk["id"], {"status": "todo", "notes": []})
+    return curric, state, index
+
+
+def save(state):
+    STATE.write_text(json.dumps(state, indent=2) + "\n")
+
+
+def cmd_list(state, index, category=None):
+    cur = None
+    for sid, meta in index.items():
+        if category and meta["category"] != category:
+            continue
+        if meta["mod"] != cur:
+            cur = meta["mod"]
+            print(f"\n{C['bold']}{C['cyan']}{cur}{C['reset']}")
+        st = state["skills"][sid]["status"]
+        tgt = ", ".join(meta.get("targets", [])) or "-"
+        print(f"  {C[st]}{STATUS_MARK[st]} {sid:<16}{C['reset']} {meta['title']}")
+        print(f"       targets: {tgt}")
+        for n in state["skills"][sid].get("notes", []):
+            print(f"       \033[90m· {n}\033[0m")
+
+
+def cmd_show(state, index):
+    from collections import Counter
+    by_cat = {}
+    for sid, meta in index.items():
+        by_cat.setdefault(meta["category"], Counter())[state["skills"][sid]["status"]] += 1
+    print(f"\n{C['bold']}Progress by area{C['reset']}")
+    total = Counter()
+    for cat, c in by_cat.items():
+        done, learn, todo = c["done"], c["learning"], c["todo"]
+        n = done + learn + todo
+        total.update(c)
+        bar = "█" * done + "▓" * learn + "░" * todo
+        print(f"  {cat:<10} {bar:<16} {done}/{n} done"
+              + (f", {learn} in progress" if learn else ""))
+    n = sum(total.values())
+    print(f"\n  {C['bold']}overall: {total['done']}/{n} done, "
+          f"{total['learning']} in progress{C['reset']}\n")
+
+
+def set_status(state, index, sid, status):
+    if sid not in index:
+        sys.exit(f"no such skill id: {sid}  (try: ./tracker/track list)")
+    state["skills"][sid]["status"] = status
+    save(state)
+    print(f"{STATUS_MARK[status]} {sid} -> {status}")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__); return
+    curric, state, index = load()
+    cmd, args = sys.argv[1], sys.argv[2:]
+
+    if cmd == "list":
+        cmd_list(state, index, args[0] if args else None)
+    elif cmd == "show":
+        cmd_show(state, index)
+    elif cmd in ("start", "done", "reset"):
+        if not args:
+            sys.exit(f"usage: ./tracker/track {cmd} <id>")
+        set_status(state, index, args[0], {"start": "learning", "done": "done", "reset": "todo"}[cmd])
+    elif cmd == "note":
+        if len(args) < 2:
+            sys.exit("usage: ./tracker/track note <id> <text>")
+        sid = args[0]
+        if sid not in index:
+            sys.exit(f"no such skill id: {sid}")
+        stamp = datetime.date.today().isoformat()
+        state["skills"][sid].setdefault("notes", []).append(f"{stamp}: {' '.join(args[1:])}")
+        save(state); print(f"note added to {sid}")
+    elif cmd == "log":
+        if args:
+            stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            state["journal"].append(f"{stamp}  {' '.join(args)}")
+            save(state); print("logged")
+        else:
+            for line in state["journal"]:
+                print(line)
+    else:
+        sys.exit(f"unknown command: {cmd}  (run with no args for help)")
+
+
+if __name__ == "__main__":
+    main()
